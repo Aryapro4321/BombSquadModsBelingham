@@ -20,7 +20,6 @@ CREATOR_TEXT = (
 CANCEL_COMMAND = 'AutoBuy.Belingham.Cancel'
 
 AUTO_BUY_ENABLED = True
-
 _AUTO_BUY_PLUGIN = None
 _AUTO_BUY_SETTINGS_WINDOW = None
 
@@ -28,14 +27,11 @@ ITEM_LIMITS = {}
 AUTOBUY_CONFIG_KEY = 'BSLifeAutoBuy_ItemLimits'
 
 
-# ============================================================
-# PATTERNS
-# ============================================================
-
 SELL_PATTERN = re.compile(
-    r'Sell\s*ID\s*:\s*(s\d+)',
+    r'Sell ID:\s*(s\d+)',
     re.IGNORECASE,
 )
+
 
 BUY_RESULT_PATTERN = re.compile(
     r"""
@@ -55,10 +51,6 @@ BUY_RESULT_PATTERN = re.compile(
     re.IGNORECASE | re.VERBOSE,
 )
 
-
-# ============================================================
-# SETTINGS LOAD / SAVE
-# ============================================================
 
 def _load_item_limits():
     global ITEM_LIMITS
@@ -81,17 +73,12 @@ def _load_item_limits():
                     pass
 
     except Exception as exc:
-        print(
-            'AUTOBUY LOAD ERROR:',
-            repr(exc),
-        )
+        print('AUTOBUY LOAD ERROR:', repr(exc))
 
 
 def _save_item_limits():
     try:
-        babase.app.config[
-            AUTOBUY_CONFIG_KEY
-        ] = {
+        babase.app.config[AUTOBUY_CONFIG_KEY] = {
             str(code).strip().lower(): float(price)
             for code, price in ITEM_LIMITS.items()
         }
@@ -99,15 +86,8 @@ def _save_item_limits():
         babase.app.config.commit()
 
     except Exception as exc:
-        print(
-            'AUTOBUY SAVE ERROR:',
-            repr(exc),
-        )
+        print('AUTOBUY SAVE ERROR:', repr(exc))
 
-
-# ============================================================
-# CHAT
-# ============================================================
 
 def _read_chat():
     try:
@@ -116,18 +96,11 @@ def _read_chat():
         if not messages:
             return []
 
-        return [
-            str(x).strip()
-            for x in messages
-        ]
+        return [str(x).strip() for x in messages]
 
     except Exception:
         return []
 
-
-# ============================================================
-# HELPERS
-# ============================================================
 
 def _normalize_code(code):
     return str(code).strip().lower()
@@ -279,6 +252,7 @@ class AutoBuySettingsWindow:
 
         self._update_list()
 
+
     def _add_update(self):
 
         try:
@@ -354,6 +328,7 @@ class AutoBuySettingsWindow:
 
         self._update_list()
 
+
     def _update_list(self):
 
         if not ITEM_LIMITS:
@@ -376,6 +351,7 @@ class AutoBuySettingsWindow:
         except Exception:
             pass
 
+
     def _close(self):
 
         global _AUTO_BUY_SETTINGS_WINDOW
@@ -391,10 +367,6 @@ class AutoBuySettingsWindow:
         _AUTO_BUY_SETTINGS_WINDOW = None
 
 
-# ============================================================
-# OPEN SETTINGS
-# ============================================================
-
 def _open_settings():
 
     global _AUTO_BUY_SETTINGS_WINDOW
@@ -403,9 +375,7 @@ def _open_settings():
         return
 
     try:
-        _AUTO_BUY_SETTINGS_WINDOW = (
-            AutoBuySettingsWindow()
-        )
+        _AUTO_BUY_SETTINGS_WINDOW = AutoBuySettingsWindow()
 
     except Exception as exc:
         print(
@@ -457,7 +427,6 @@ def _toggle_buy(window):
 
             plugin._queue.clear()
             plugin._queued_ids.clear()
-
             plugin._waiting = False
             plugin._pending_id = None
 
@@ -472,8 +441,7 @@ def _toggle_buy(window):
         color=(
             (0.2, 1.0, 0.2)
             if AUTO_BUY_ENABLED
-            else
-            (1.0, 0.3, 0.3)
+            else (1.0, 0.3, 0.3)
         ),
     )
 
@@ -481,7 +449,7 @@ def _toggle_buy(window):
 
 
 # ============================================================
-# PARTY WINDOW
+# PARTY UI
 # ============================================================
 
 _previous_party_init = party.PartyWindow.__init__
@@ -639,6 +607,7 @@ if (
 # ============================================================
 
 # ba_meta export babase.Plugin
+
 class AutoBuy(babase.Plugin):
 
     def __init__(self):
@@ -651,7 +620,6 @@ class AutoBuy(babase.Plugin):
 
         self._queue = []
         self._queued_ids = set()
-
         self._active_sell_ids = set()
 
         self._waiting = False
@@ -676,8 +644,9 @@ class AutoBuy(babase.Plugin):
             color=(0.2, 1.0, 0.2),
         )
 
+
     # ========================================================
-    # POLL CHAT
+    # CHAT SCAN
     # ========================================================
 
     def _poll_chat(self):
@@ -690,7 +659,6 @@ class AutoBuy(babase.Plugin):
         if not messages:
 
             self._active_sell_ids.clear()
-
             return
 
         current_sell_ids = set()
@@ -699,9 +667,7 @@ class AutoBuy(babase.Plugin):
 
             text = str(msg).strip()
 
-            match = SELL_PATTERN.search(
-                text
-            )
+            match = SELL_PATTERN.search(text)
 
             if not match:
                 continue
@@ -710,9 +676,7 @@ class AutoBuy(babase.Plugin):
                 match.group(1)
             )
 
-            current_sell_ids.add(
-                sell_id
-            )
+            current_sell_ids.add(sell_id)
 
             if sell_id not in self._active_sell_ids:
 
@@ -724,8 +688,9 @@ class AutoBuy(babase.Plugin):
             current_sell_ids
         )
 
+
     # ========================================================
-    # CHAT HOOK
+    # DIRECT CHAT
     # ========================================================
 
     def _handle_chat_message(self, msg):
@@ -738,9 +703,7 @@ class AutoBuy(babase.Plugin):
         if not text:
             return
 
-        match = SELL_PATTERN.search(
-            text
-        )
+        match = SELL_PATTERN.search(text)
 
         if not match:
             return
@@ -755,6 +718,7 @@ class AutoBuy(babase.Plugin):
         self._enqueue_sell_id(
             sell_id
         )
+
 
     # ========================================================
     # QUEUE
@@ -784,17 +748,12 @@ class AutoBuy(babase.Plugin):
         )
 
         ba.screenmessage(
-            'QUEUE: {}'.format(
-                sell_id
-            ),
+            'QUEUE: {}'.format(sell_id),
             color=(0.3, 0.8, 1.0),
         )
 
         self._process_next()
 
-    # ========================================================
-    # PROCESS NEXT
-    # ========================================================
 
     def _process_next(self):
 
@@ -814,7 +773,6 @@ class AutoBuy(babase.Plugin):
         )
 
         self._waiting = True
-
         self._pending_id = sell_id
 
         self._request_token += 1
@@ -822,18 +780,14 @@ class AutoBuy(babase.Plugin):
         token = self._request_token
 
         ba.screenmessage(
-            'CHECK {}'.format(
-                sell_id
-            ),
+            'CHECK {}'.format(sell_id),
             color=(0.3, 0.8, 1.0),
         )
 
         try:
 
             ba.chatmessage(
-                'b {}'.format(
-                    sell_id
-                )
+                'b {}'.format(sell_id)
             )
 
         except Exception as exc:
@@ -844,7 +798,6 @@ class AutoBuy(babase.Plugin):
             )
 
             self._finish_request()
-
             return
 
         babase.apptimer(
@@ -856,9 +809,6 @@ class AutoBuy(babase.Plugin):
             ),
         )
 
-    # ========================================================
-    # TIMEOUT
-    # ========================================================
 
     def _request_timeout(
         self,
@@ -884,8 +834,9 @@ class AutoBuy(babase.Plugin):
 
         self._finish_request()
 
+
     # ========================================================
-    # CHECK RESPONSE
+    # RESPONSE
     # ========================================================
 
     def _check_buy_response(self):
@@ -913,9 +864,6 @@ class AutoBuy(babase.Plugin):
             if not self._waiting:
                 break
 
-    # ========================================================
-    # PARSE RESPONSE
-    # ========================================================
 
     def _check_result_text(self, text):
 
@@ -964,13 +912,11 @@ class AutoBuy(babase.Plugin):
             )
 
             self._finish_request()
-
             return
 
         if amount <= 0:
 
             self._finish_request()
-
             return
 
         unit_price = (
@@ -992,25 +938,6 @@ class AutoBuy(babase.Plugin):
             color=(0.3, 0.9, 1.0),
         )
 
-        print(
-            'AUTOBUY RESULT:',
-            sell_id,
-            'ITEM:',
-            item_code,
-            'AMOUNT:',
-            amount,
-            'TOTAL:',
-            total_price,
-            'UNIT:',
-            unit_price,
-            'MAX:',
-            max_price,
-        )
-
-        # ====================================================
-        # NOT SET
-        # ====================================================
-
         if max_price is None:
 
             ba.screenmessage(
@@ -1021,19 +948,13 @@ class AutoBuy(babase.Plugin):
             )
 
             self._finish_request()
-
             return
-
-        # ====================================================
-        # BUY
-        # ====================================================
 
         if unit_price <= float(max_price):
 
             ba.screenmessage(
-                'BUY {} x{}'.format(
-                    item_code,
-                    amount,
+                'BUY {} x1'.format(
+                    item_code
                 ),
                 color=(0.2, 1.0, 0.2),
             )
@@ -1043,11 +964,11 @@ class AutoBuy(babase.Plugin):
             self._waiting = False
 
             babase.apptimer(
-                0.10,
+                0.01,
                 babase.Call(
                     self._send_amount,
                     sell_id,
-                    amount,
+                    1,
                     token,
                 ),
             )
@@ -1055,7 +976,7 @@ class AutoBuy(babase.Plugin):
             return
 
         # ====================================================
-        # CANCEL IMMEDIATELY
+        # TOO EXPENSIVE -> CANCEL IMMEDIATELY
         # ====================================================
 
         ba.screenmessage(
@@ -1102,8 +1023,9 @@ class AutoBuy(babase.Plugin):
 
         self._finish_request()
 
+
     # ========================================================
-    # SEND BUY AMOUNT
+    # SEND BUY
     # ========================================================
 
     def _send_amount(
@@ -1121,14 +1043,12 @@ class AutoBuy(babase.Plugin):
 
         try:
 
-            ba.chatmessage(
-                str(amount)
-            )
+            # ALWAYS BUY ONLY 1
+            ba.chatmessage('1')
 
             ba.screenmessage(
-                'BUY SENT: {} x{}'.format(
-                    sell_id,
-                    amount,
+                'BUY SENT: {} x1'.format(
+                    sell_id
                 ),
                 color=(0.2, 1.0, 0.2),
             )
@@ -1136,8 +1056,7 @@ class AutoBuy(babase.Plugin):
             print(
                 'AUTOBUY BUY SENT:',
                 sell_id,
-                'AMOUNT:',
-                amount,
+                'AMOUNT: 1',
             )
 
         except Exception as exc:
@@ -1149,6 +1068,7 @@ class AutoBuy(babase.Plugin):
 
         self._finish_request()
 
+
     # ========================================================
     # FINISH
     # ========================================================
@@ -1156,7 +1076,6 @@ class AutoBuy(babase.Plugin):
     def _finish_request(self):
 
         self._waiting = False
-
         self._pending_id = None
 
         self._request_token += 1
@@ -1166,4 +1085,4 @@ class AutoBuy(babase.Plugin):
             babase.Call(
                 self._process_next
             ),
-        )
+            )
